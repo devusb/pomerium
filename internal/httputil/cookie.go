@@ -12,8 +12,8 @@ import (
 var ErrCookieTooLarge = errors.New("cookie too large")
 
 const (
-	defaultCookieChunkerChunkSize = 5700
-	defaultCookieChunkerMaxChunks = 64
+	defaultCookieChunkerChunkSize = 3800
+	defaultCookieChunkerMaxChunks = 96
 )
 
 type cookieChunkerConfig struct {
