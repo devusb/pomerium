@@ -5,14 +5,15 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"log"
 )
 
 // ErrCookieTooLarge indicates that a cookie is too large.
 var ErrCookieTooLarge = errors.New("cookie too large")
 
 const (
-	defaultCookieChunkerChunkSize = 3800
-	defaultCookieChunkerMaxChunks = 128
+	defaultCookieChunkerChunkSize = 5700
+	defaultCookieChunkerMaxChunks = 64
 )
 
 type cookieChunkerConfig struct {
@@ -62,12 +63,15 @@ func NewCookieChunker(options ...CookieChunkerOption) *CookieChunker {
 // SetCookie sets a chunked cookie.
 func (cc *CookieChunker) SetCookie(w http.ResponseWriter, cookie *http.Cookie) error {
 	chunks := chunk(cookie.Value, cc.cfg.chunkSize)
+	log.Println(cookie.Value)
 	if len(chunks) > cc.cfg.maxChunks {
 		return ErrCookieTooLarge
 	}
 
 	sizeCookie := *cookie
 	sizeCookie.Value = strconv.Itoa(len(chunks))
+	log.Println("-----------------------------------------------")
+	log.Println(sizeCookie.Value)
 	http.SetCookie(w, &sizeCookie)
 	for i, chunk := range chunks {
 		chunkCookie := *cookie
