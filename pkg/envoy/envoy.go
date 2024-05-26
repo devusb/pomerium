@@ -8,9 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -34,7 +34,11 @@ import (
 
 const (
 	configFileName = "envoy-config.yaml"
+	workingDirectoryName = ".pomerium-envoy"
+	embeddedEnvoyPermissions     fs.FileMode = 0o700
 )
+
+var OverrideEnvoyPath = ""
 
 type serverOptions struct {
 	services string
@@ -58,17 +62,16 @@ type Server struct {
 
 // NewServer creates a new server with traffic routed by envoy.
 func NewServer(ctx context.Context, src config.Source, builder *envoyconfig.Builder) (*Server, error) {
-	if err := preserveRlimitNofile(); err != nil {
-		log.Debug(ctx).Err(err).Msg("couldn't preserve RLIMIT_NOFILE before starting Envoy")
-	}
+	envoyPath := OverrideEnvoyPath
+	wd := filepath.Join(os.TempDir(), workingDirectoryName)
 
-	envoyPath, err := Extract()
+	err := os.MkdirAll(wd, embeddedEnvoyPermissions)
 	if err != nil {
-		return nil, fmt.Errorf("extracting envoy: %w", err)
+		return nil, fmt.Errorf("error creating temporary working directory for envoy: %w", err)
 	}
 
 	srv := &Server{
-		wd:        path.Dir(envoyPath),
+		wd:        wd,
 		builder:   builder,
 		grpcPort:  src.GetConfig().GRPCPort,
 		httpPort:  src.GetConfig().HTTPPort,
